@@ -20,8 +20,8 @@ gpg -e -r $(whoami) pass # Encrypt pass. create a pass.gpg file
 rm pass                  # Delete the original file
 ```
 
-* Change the `database` variable in the script to point to the database and the `passgpg`
-variable to point to the pass.gpg created in above step.
+* Change the `database` variable in the script to point to the keepassxc database and the `passgpg`
+variable to point to the pass.gpg file created in above step.
 
 * Download & place the script in `$HOME/bin/` and make the script executable
 ```
