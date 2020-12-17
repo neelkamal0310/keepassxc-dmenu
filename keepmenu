@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+# Path to keepass database
+database="$HOME/keepass.kdbx"
+
+# Path to gpg encpypted file containing password for the database
+passgpg="$HOME/pass.gpg"
+
+[[ ! -e "$database" ]] && notify-send "keepmenu" "Please check if the database variable is set properly" && exit
+[[ ! -e "$passgpg" ]] && notify-send "keepmenu" "Please check if the passgpg variable is set properly" && exit
+
+# Customize dmenu
+dmenu="dmenu -l 20 -sb '#5555ff' -sf '#ffffff' -nb '#111111' -nf '#eeeeee'\
+    -fn 'monospace:size=14'"
+
+# Timeout after which clipboard will be cleared
+timeout=15
+
+# Decrypt the password
+pass="$(gpg -d ${passgpg} 2> /dev/null)"
+
+# Extract entries list from the database
+entry=$(echo ${pass} | keepassxc-cli ls "${database}" 2> /dev/null | \
+    eval $dmenu)
+
+# Exits if no entry is selected
+[[ $entry ]] || exit
+
+# Checks if the entry selected is a group or a regular entry. If it is a group,
+# extract the entries of that group
+if [[ ! "$entry" =~ .*/ ]]; then
+    details=$(echo ${pass} | keepassxc-cli show "${database}" "${entry}" 2> /dev/null | \
+        eval $dmenu)
+else
+    gentry=$(echo ${pass} | keepassxc-cli ls "${database}" "${entry}" 2> /dev/null | \
+        eval $dmenu)
+
+    details=$(echo ${pass} | keepassxc-cli show "${database}" "${entry}${gentry}" 2> /dev/null | \
+        eval $dmenu)
+fi
+
+# Exit if nothing is selected
+[[ $details ]] || exit
+
+# Determines which field from details is selected 
+field=$(echo "$details" | cut -d ':' -f 1)
+
+# If the password field is selected, copy it safely to the clipboard and clear the
+# clipboard after the specified timeout.
+# If the selected field is not password. copy its contents to the clipboard
+if [[ "$field" == "Password" ]]; then
+    if [[ "$entry" =~ .*/ ]]; then
+        echo ${pass} | keepassxc-cli clip "${database}" "${entry}${gentry}" > /dev/null
+    else
+        echo ${pass} | keepassxc-cli clip "${database}" "${entry}" > /dev/null
+    fi
+    notify-send "keepmenu" "Password copied to clipboard for ${timeout} seconds"
+    sleep $timeout
+    echo '' | xclip -sel clip
+
+    # Remove entry from clipboard managers e.g. for copyq
+    # copyq remove 0 2> /dev/null
+else
+    echo "$details" | cut -d ':' -f 2- | sed 's/\s//' | xclip -sel clip
+    notify-send "keepmenu" "${field} copied to clipboard"
+fi
