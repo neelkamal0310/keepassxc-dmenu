@@ -10,7 +10,7 @@ passgpg="$HOME/pass.gpg"
 [[ ! -e "$passgpg" ]] && notify-send "keepmenu" "Please check if the passgpg variable is set properly" && exit
 
 # Customize dmenu
-dmenu="dmenu -l 20 -sb '#5555ff' -sf '#ffffff' -nb '#111111' -nf '#eeeeee'\
+dmenu="dmenu -i -l 20 -sb '#5555ff' -sf '#ffffff' -nb '#111111' -nf '#eeeeee'\
     -fn 'monospace:size=14'"
 
 # Timeout after which clipboard will be cleared
